@@ -37,4 +37,24 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 
 ---
 
+## GitHub Repos
+
+### Workspace Backup
+- **Repo:** `liuchenryuutin/openclaw-agent-daxia.git`
+- **Remote:** `git@github.com:liuchenryuutin/openclaw-agent-daxia.git`
+- **Branch:** master
+- **Local Path:** `~/.openclaw/workspace`
+- **Status:** Connected, auto-commit and push enabled
+
+### GitHub CLI
+- **Account:** liuchenryutin
+- **Protocol:** SSH
+- **Token Scopes:** repo, gist, read:org, admin:public_key
+- **Status:** Configured and working
+
+### Dedicated GitHub Repos Directory
+_(待指定 - 你想用哪个目录保存其他 GitHub 仓库？)_
+
+---
+
 Add whatever helps you do your job. This is your cheat sheet.
