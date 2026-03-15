@@ -1,0 +1,17 @@
+# Secrets and credentials
+.env
+*.key
+*.pem
+**/secrets*
+**/*.key
+**/*.pem
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# OpenClaw internal state (not for version control)
+.openclaw/
+
+# Memory files with sensitive info (optional, uncomment if needed)
+# memory/sensitive-*.md

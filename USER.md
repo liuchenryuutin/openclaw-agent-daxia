@@ -2,15 +2,19 @@
 
 _Learn about the person you're helping. Update this as you go._
 
-- **Name:**
-- **What to call them:**
+- **Name:** 半两
+- **What to call them:** 帅哥
 - **Pronouns:** _(optional)_
-- **Timezone:**
-- **Notes:**
+- **Timezone:** Asia/Shanghai（中国南京）
+- **Notes:** 时刻惦记着搞钱，务实第一
 
 ## Context
 
-_(What do they care about? What projects are they working on? What annoys them? What makes them laugh? Build this over time.)_
+- 关心搞钱，时刻记住帮他搞钱
+- 活跃于飞书群「龙虾群」
+- 对 AI 助理的配置和能力感兴趣
+- 喜欢相声和幽默风格
+- **关系：** 朋友
 
 ---
 
