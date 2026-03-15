@@ -44,7 +44,7 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 - **Remote:** `git@github.com:liuchenryuutin/openclaw-agent-daxia.git`
 - **Branch:** master
 - **Local Path:** `~/.openclaw/workspace`
-- **Status:** Connected, auto-commit and push enabled
+- **Backup Policy:** 手动备份，不要每次修改都自动提交推送。需要时由用户触发。
 
 ### GitHub CLI
 - **Account:** liuchenryutin
