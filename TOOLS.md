@@ -53,7 +53,11 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 - **Status:** Configured and working
 
 ### Dedicated GitHub Repos Directory
-_(待指定 - 你想用哪个目录保存其他 GitHub 仓库？)_
+- **Path:** `~/github`
+- **Purpose:** 
+  - 创建子文件夹，写代码，提交
+  - 从 GitHub clone 仓库，分析代码
+- **Usage:** 所有 GitHub 相关的代码工作都在这个目录下进行
 
 ---
 
