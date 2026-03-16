@@ -3,11 +3,11 @@
     "email": null,
     "calendar": null,
     "weather": null,
-    "astronomy": "2026-03-15"
+    "astronomy": "2026-03-16"
   },
   "dailyTasks": {
     "astronomy": {
-      "lastDate": "2026-03-15",
+      "lastDate": "2026-03-16",
       "enabled": true
     }
   }
