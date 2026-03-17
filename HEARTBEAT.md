@@ -6,7 +6,7 @@
 - Check memory/heartbeat-state.json for last astronomy date
 - If today's date is different from lastDate, provide one astronomy fact about the night sky
 - Update lastDate to today's date
-- Send recommendation to user via main session
+- **发送到飞书**，收件人 open_id：`ou_8462b401def44e3db8a04e4a52a67fff`（半两）
 - Keep facts interesting: constellations, planets, moon phases, space events, stellar phenomena
 
 ### 其他检查（可选）

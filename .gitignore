@@ -6,6 +6,10 @@
 **/*.key
 **/*.pem
 
+# Dependencies
+**/node_modules/
+**/package-lock.json
+
 # OS files
 .DS_Store
 Thumbs.db
@@ -15,3 +19,6 @@ Thumbs.db
 
 # Memory files with sensitive info (optional, uncomment if needed)
 # memory/sensitive-*.md
+
+**/news-scraper/scripts/output/
+**/news-scraper/scripts/temp/

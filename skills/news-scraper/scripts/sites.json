@@ -1,0 +1,238 @@
+{
+  "sites": [
+    {
+      "name": "新浪新闻",
+      "nameEn": "sina",
+      "enabled": true,
+      "type": "static",
+      "sections": [
+        {
+          "name": "时政要闻",
+          "url": "https://news.sina.com.cn",
+          "selectors": {
+            "container": "body",
+            "link": "a[href*='/c/'], a[href*='/o/']",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href", "baseUrl": "https://news.sina.com.cn" },
+          "filter": { "urlContains": "/doc-" }
+        },
+        {
+          "name": "国际新闻",
+          "url": "https://news.sina.com.cn",
+          "selectors": {
+            "container": "body",
+            "link": "a[href*='/w/']",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href", "baseUrl": "https://news.sina.com.cn" },
+          "filter": { "urlContains": "/doc-" }
+        },
+        {
+          "name": "财经",
+          "url": "https://finance.sina.com.cn",
+          "selectors": {
+            "container": "body",
+            "link": "a[href]",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href", "baseUrl": "https://finance.sina.com.cn" },
+          "filter": { "urlContains": "/doc-" }
+        },
+        {
+          "name": "科技",
+          "url": "https://tech.sina.com.cn",
+          "selectors": {
+            "container": "body",
+            "link": "a[href]",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href", "baseUrl": "https://tech.sina.com.cn" },
+          "filter": { "urlContains": "/doc-" }
+        },
+        {
+          "name": "社会",
+          "url": "https://news.sina.com.cn",
+          "selectors": {
+            "container": "body",
+            "link": "a[href*='/s/']",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href", "baseUrl": "https://news.sina.com.cn" },
+          "filter": { "urlContains": "/doc-" }
+        },
+        {
+          "name": "体育",
+          "url": "https://sports.sina.com.cn",
+          "selectors": {
+            "container": "body",
+            "link": "a[href]",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href", "baseUrl": "https://sports.sina.com.cn" },
+          "filter": { "urlContains": "/doc-", "urlExclude": "/l/" }
+        },
+        {
+          "name": "汽车",
+          "url": "https://auto.sina.com.cn",
+          "selectors": {
+            "container": "body",
+            "link": "a[href]",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href", "baseUrl": "https://auto.sina.com.cn" },
+          "filter": { "urlContains": "/detail-" }
+        }
+      ]
+    },
+    {
+      "name": "观察者网",
+      "nameEn": "guancha",
+      "enabled": true,
+      "type": "static",
+      "sections": [
+        {
+          "name": "综合",
+          "url": "https://www.guancha.cn",
+          "selectors": {
+            "container": "body",
+            "link": "a[href*='.shtml']",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href", "baseUrl": "https://www.guancha.cn" },
+          "filter": { "minTitleLength": 8 }
+        }
+      ]
+    },
+    {
+      "name": "钛媒体",
+      "nameEn": "tmtpost",
+      "enabled": true,
+      "type": "static",
+      "sections": [
+        {
+          "name": "文章",
+          "url": "https://www.tmtpost.com",
+          "selectors": {
+            "container": "body",
+            "link": "a[href*='/7']",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href", "baseUrl": "https://www.tmtpost.com" },
+          "filter": { "minTitleLength": 6 }
+        },
+        {
+          "name": "快报",
+          "url": "https://www.tmtpost.com/nictation",
+          "selectors": {
+            "container": "body",
+            "link": "a[href*='/nictation/']",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href", "baseUrl": "https://www.tmtpost.com" },
+          "filter": { "minTitleLength": 6 }
+        }
+      ]
+    },
+    {
+      "name": "腾讯新闻",
+      "nameEn": "qq",
+      "enabled": true,
+      "type": "dynamic",
+      "waitMs": 3000,
+      "sections": [
+        {
+          "name": "首页",
+          "url": "https://news.qq.com",
+          "selectors": {
+            "container": "body",
+            "link": "a[href*='/rain/a/']",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href" },
+          "filter": { "minTitleLength": 6 }
+        }
+      ]
+    },
+    {
+      "name": "网易新闻",
+      "nameEn": "163",
+      "enabled": true,
+      "type": "dynamic",
+      "waitMs": 3000,
+      "sections": [
+        {
+          "name": "首页",
+          "url": "https://news.163.com",
+          "selectors": {
+            "container": "body",
+            "link": "a[href]",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href" },
+          "filter": { "urlContains": "article", "minTitleLength": 8 }
+        }
+      ]
+    },
+    {
+      "name": "凤凰网",
+      "nameEn": "ifeng",
+      "enabled": true,
+      "type": "dynamic",
+      "waitMs": 3000,
+      "sections": [
+        {
+          "name": "首页",
+          "url": "https://www.ifeng.com",
+          "selectors": {
+            "container": "body",
+            "link": "a[href]",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href" },
+          "filter": { "minTitleLength": 8 }
+        }
+      ]
+    },
+    {
+      "name": "澎湃新闻",
+      "nameEn": "thepaper",
+      "enabled": true,
+      "type": "dynamic",
+      "waitMs": 3000,
+      "sections": [
+        {
+          "name": "首页",
+          "url": "https://www.thepaper.cn",
+          "selectors": {
+            "container": "body",
+            "link": "a[href*='newsDetail_']",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href", "baseUrl": "https://www.thepaper.cn" },
+          "filter": { "minTitleLength": 6 }
+        }
+      ]
+    },
+    {
+      "name": "虎嗅",
+      "nameEn": "huxiu",
+      "enabled": true,
+      "type": "dynamic",
+      "waitMs": 4000,
+      "sections": [
+        {
+          "name": "首页",
+          "url": "https://www.huxiu.com",
+          "selectors": {
+            "container": "body",
+            "link": "a[href*='/article/'], a[href*='/moment/']",
+            "title": null
+          },
+          "extract": { "title": "text", "url": "href", "baseUrl": "https://www.huxiu.com" },
+          "filter": { "minTitleLength": 6 }
+        }
+      ]
+    }
+  ]
+}
