@@ -153,6 +153,7 @@ node orchestrator.js --parallel 3
 | `--parallel` | 4 | 并行子进程数（分批执行） |
 | `--skip-feishu` | false | 跳过飞书文档创建和消息推送 |
 | `--content` | false | 同时抓取文章正文，并生成栏目分析（关键词/重要新闻/内容分布） |
+| `--chat-id` | none | 额外推送的飞书群 chat_id（可多次指定） |
 
 ### Content Extraction & Analysis（--content 模式）
 
@@ -225,6 +226,31 @@ const FEISHU_CONFIG = {
 ```
 
 修改这些值可以指向不同的飞书应用和接收人。
+
+### 定时任务 (Cron Setup)
+
+已配置系统 crontab，每天早 8:00 自动运行完整 Pipeline：
+
+```
+# crontab -l
+0 8 * * * /home/liuchen/.openclaw/workspace/skills/news-scraper/scripts/cron-wrapper.sh
+```
+
+**包装脚本** `scripts/cron-wrapper.sh`：
+- 设置 PATH（node, openclaw）
+- 运行 `node orchestrator.js --content --chat-id oc_xxx`（全站点 + 正文 + 子模型总结 + 龙虾群推送）
+- 日志保存到 `output/logs/cron-YYYY-MM-DD.log`
+- 自动清理 30 天前的日志
+
+**推送目标**：
+- 📨 半两个人 DM（open_id）
+- 📢 龙虾群（chat_id: `oc_ca0d4c0c80e4c7ac9822b2a7fc8b9a1d`）
+
+**群消息格式**：精简速报（摘要 + 热点标签 + 飞书文档链接）
+
+**修改推送时间**：编辑 crontab（`crontab -e`）
+**添加更多群**：在 cron-wrapper.sh 的 `--chat-id` 后添加（可多次指定）
+**跳过某天**：注释掉 crontab 行即可
 
 ## Single-site Mode
 

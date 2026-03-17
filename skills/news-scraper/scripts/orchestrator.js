@@ -16,6 +16,8 @@
  *   node orchestrator.js --limit 20          # Items per section
  *   node orchestrator.js --parallel 3        # Max parallel children
  *   node orchestrator.js --skip-feishu       # Skip Feishu doc creation (test)
+ *   node orchestrator.js --content           # Fetch article content + LLM analysis
+ *   node orchestrator.js --chat-id oc_xxx    # Send to group chat (repeatable)
  */
 
 const { spawn } = require('child_process');
@@ -97,13 +99,14 @@ function repairJSON(raw) {
 // ── CLI ───────────────────────────────────────────────────
 function parseArgs() {
   const args = process.argv.slice(2);
-  const opts = { site: null, limit: 20, parallel: 4, skipFeishu: false, content: false };
+  const opts = { site: null, limit: 20, parallel: 4, skipFeishu: false, content: false, chatIds: [] };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--site' && args[i+1]) opts.site = args[++i];
     else if (args[i] === '--limit' && args[i+1]) opts.limit = parseInt(args[++i]);
     else if (args[i] === '--parallel' && args[i+1]) opts.parallel = parseInt(args[++i]);
     else if (args[i] === '--skip-feishu') opts.skipFeishu = true;
     else if (args[i] === '--content') opts.content = true;
+    else if (args[i] === '--chat-id' && args[i+1]) opts.chatIds.push(args[++i]);
   }
   return opts;
 }
@@ -220,7 +223,25 @@ async function sendMessage(text) {
   if (res.code !== 0) {
     console.error(`  [msg err] ${res.msg}`);
   } else {
-    console.error(`  ✅ Message sent to user`);
+    console.error(`  ✅ Message sent to user (DM)`);
+  }
+  return res;
+}
+
+async function sendToGroup(chatId, text) {
+  const token = await getTenantToken();
+  const res = await apiRequest('POST', 'open.feishu.cn',
+    '/open-apis/im/v1/messages?receive_id_type=chat_id',
+    {
+      receive_id: chatId,
+      msg_type: 'text',
+      content: JSON.stringify({ text }),
+    },
+    token);
+  if (res.code !== 0) {
+    console.error(`  [group msg err] chat=${chatId}: ${res.msg}`);
+  } else {
+    console.error(`  ✅ Message sent to group ${chatId}`);
   }
   return res;
 }
@@ -570,12 +591,27 @@ async function main() {
   try {
     const { docUrl } = await createFeishuDoc(consolidated, analysis);
 
-    // Phase 5: Send to user
+    // Phase 5: Send to user & groups
     console.error(`\n📨 Phase 5: 推送消息...`);
     let msg = `🦐 新闻爬取完成！\n\n📊 汇总报告：\n• 站点：${consolidated.sites.length} 个\n• 新闻：${consolidated.stats.total} 条\n• 用时：${elapsed}s`;
     if (analysis) msg += `\n• 分析：LLM 子模型已生成总结`;
     msg += `\n\n📄 飞书文档：${docUrl}`;
     await sendMessage(msg);
+
+    // Send to group chats
+    for (const chatId of opts.chatIds) {
+      let groupMsg = `🦐 每日新闻速报\n\n`;
+      if (analysis?.summary) {
+        groupMsg += `📝 今日摘要：${analysis.summary.slice(0, 300)}...\n\n`;
+      }
+      groupMsg += `📊 ${consolidated.sites.length} 个站点 | ${consolidated.stats.total} 条新闻`;
+      if (analysis?.sites) {
+        const allThemes = analysis.sites.flatMap(s => s.sections.flatMap(sec => sec.themes || []));
+        if (allThemes.length) groupMsg += `\n🏷️ ${[...new Set(allThemes)].slice(0, 8).join(' | ')}`;
+      }
+      groupMsg += `\n\n📄 完整报告：${docUrl}`;
+      await sendToGroup(chatId, groupMsg);
+    }
 
     console.error(`\n${'═'.repeat(60)}`);
     console.error(`  ✅ Pipeline 完成！`);
