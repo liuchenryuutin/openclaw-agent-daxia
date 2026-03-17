@@ -156,11 +156,26 @@ async function fetchContentForItems(items, limit = 20) {
   ];
 }
 
+// ── Save Content to Files (for sub-agent analysis) ───────
+function saveContentToFiles(items, siteNameEn, sectionName, date) {
+  const contentDir = path.join(__dirname, 'output', 'content', date, siteNameEn, sectionName);
+  fs.mkdirSync(contentDir, { recursive: true });
+
+  items.forEach((item, idx) => {
+    if (!item.content || item.content.length === 0) return;
+    const filename = String(idx + 1).padStart(3, '0') + '.md';
+    const filepath = path.join(contentDir, filename);
+    const md = `# ${item.title}\n\n**URL:** ${item.url}\n**Source:** ${item.source}\n**Section:** ${sectionName}\n\n---\n\n${item.content}\n`;
+    fs.writeFileSync(filepath, md);
+  });
+}
+
 // ── CLI ───────────────────────────────────────────────────
 function parseArgs() {
   const args = process.argv.slice(2);
   const opts = { site: null, list: false, output: 'text', limit: 20,
     headless: true, forceHttp: false, outputFile: null, content: false,
+    date: new Date().toISOString().slice(0, 10),
     config: path.join(__dirname, 'sites.json') };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--site' && args[i+1]) opts.site = args[++i];
@@ -334,10 +349,13 @@ async function main() {
 
       // Fetch article content if --content flag is set
       if (opts.content && items.length > 0) {
-        console.error(`       ⏳ Fetching content for ${Math.min(items.length, 20)} articles...`);
+        console.error(`       ⏳ Downloading content for ${Math.min(items.length, 20)} articles...`);
         items = await fetchContentForItems(items, 20);
         const withContent = items.filter(i => i.content && i.content.length > 0).length;
-        console.error(`       📝 Content fetched: ${withContent}/${items.length}`);
+        console.error(`       📝 Content downloaded: ${withContent}/${items.length}`);
+
+        // Save content to files for sub-agent analysis
+        saveContentToFiles(items, site.nameEn, section.name, opts.date);
       }
 
       siteResult.sections.push({ name: section.name, count: items.length, items });

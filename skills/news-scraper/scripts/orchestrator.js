@@ -308,26 +308,11 @@ async function createFeishuDoc(consolidated, analysis = null) {
       if (analysis) {
         const siteAnalysis = analysis.sites.find(s => s.name === site.name);
         const secAnalysis = siteAnalysis?.sections.find(s => s.name === section.name);
-        if (secAnalysis) {
-          // Keywords
-          if (secAnalysis.keywords.length > 0) {
-            const kwText = `🔑 关键词: ${secAnalysis.keywords.map(k => `${k.word}(${k.count})`).join('、')}`;
-            await createBlock(docId, 2, kwText, token);
+        if (secAnalysis && secAnalysis.summary) {
+          await createBlock(docId, 2, `📝 ${secAnalysis.summary}`, token);
+          if (secAnalysis.themes && secAnalysis.themes.length > 0) {
+            await createBlock(docId, 2, `🏷️ ${secAnalysis.themes.join(' | ')}`, token);
           }
-          // Notable stories
-          if (secAnalysis.notableStories.length > 0) {
-            for (const story of secAnalysis.notableStories) {
-              await createBlock(docId, 2, `⭐ ${story.title}: ${story.summary}`, token);
-            }
-          }
-          // Content type
-          if (secAnalysis.contentTypes.length > 0) {
-            const ctText = `📂 内容分布: ${secAnalysis.contentTypes.map(ct => `${ct.type}(${ct.count})`).join(' | ')}`;
-            await createBlock(docId, 2, ctText, token);
-          }
-          // Stats
-          const st = secAnalysis.stats;
-          await createBlock(docId, 2, `📈 数据: ${st.withContent}/${st.totalItems} 篇有正文, 平均 ${st.avgContentLength} 字`, token);
         }
       }
 
@@ -401,26 +386,102 @@ async function main() {
   fs.writeFileSync(consolidatedPath, JSON.stringify(consolidated, null, 2));
   console.error(`  💾 Consolidated: ${consolidatedPath}`);
 
-  // Phase 3: Run analysis (if --content was enabled)
+  // Phase 3: LLM analysis via sub-agent (if --content was enabled)
   let analysis = null;
   if (opts.content && consolidated.stats.total > 0) {
-    console.error(`\n🔍 Phase 3: 生成栏目分析...`);
-    const analysisOutput = path.join(SCRIPTS_DIR, 'output', `analysis-${new Date().toISOString().slice(0, 10)}.json`);
-    const ANALYSIS_PATH = path.join(SCRIPTS_DIR, 'analysis.js');
-    await new Promise((resolve) => {
-      const child = spawn(process.execPath, [
-        ANALYSIS_PATH,
-        '--input', consolidatedPath,
-        '--output', analysisOutput,
-      ], { cwd: SCRIPTS_DIR, stdio: ['ignore', 'pipe', 'pipe'] });
-      child.stdout.on('data', () => {});
-      child.stderr.on('data', d => process.stderr.write(d));
-      child.on('close', resolve);
-      child.on('error', () => resolve());
-      setTimeout(() => { child.kill('SIGTERM'); resolve(); }, 60000); // 60s timeout for analysis
+    console.error(`\n🔍 Phase 3: 启动子模型进行新闻总结...`);
+    const date = new Date().toISOString().slice(0, 10);
+    const contentDir = path.join(SCRIPTS_DIR, 'output', 'content', date);
+    const analysisOutput = path.join(SCRIPTS_DIR, 'output', `analysis-${date}.json`);
+
+    // Build task prompt for sub-agent
+    const taskPrompt = `你是新闻分析助手。请完成以下任务：
+
+1. 读取目录 ${contentDir} 下的所有新闻内容文件
+   - 目录结构: 站点名/栏目名/001.md, 002.md, ...
+   - 每个 .md 文件包含标题、URL、来源、正文
+
+2. 对每个站点的每个栏目，生成内容总结（200-300字），包括：
+   - 主要话题和事件
+   - 值得关注的重要新闻
+   - 信息趋势或特点
+   - 关键主题标签（3-5个）
+
+3. 生成整体摘要（总结所有站点的热点和领域覆盖）
+
+4. 将结果写入 ${analysisOutput}，格式：
+{
+  "summary": "整体摘要文本",
+  "sites": [{
+    "name": "站点名",
+    "sections": [{
+      "name": "栏目名",
+      "summary": "该栏目总结（200-300字）",
+      "themes": ["主题1", "主题2", ...],
+      "itemCount": 20
+    }]
+  }]
+}
+
+5. 完成后创建标记文件 ${analysisOutput.replace('.json', '.done')}
+
+重要：直接执行，不要提问。先检查目录是否存在，如不存在则写入错误信息到标记文件。`;
+
+    const taskFile = path.join(SCRIPTS_DIR, 'output', `task-${date}.txt`);
+    fs.writeFileSync(taskFile, taskPrompt);
+
+    // Spawn sub-agent via openclaw CLI
+    const openclawPath = '/home/liuchen/.nvm/versions/node/v24.14.0/bin/openclaw';
+    const doneFile = analysisOutput.replace('.json', '.done');
+    console.error(`  🤖 Spawning sub-agent for LLM analysis...`);
+    console.error(`  📂 Content dir: ${contentDir}`);
+    console.error(`  📝 Analysis output: ${analysisOutput}`);
+
+    const child = spawn(openclawPath, ['agent', '-m', `@${taskFile}`], {
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
-    if (fs.existsSync(analysisOutput)) {
-      analysis = JSON.parse(fs.readFileSync(analysisOutput, 'utf-8'));
+
+    child.stdout.on('data', d => process.stderr.write(`  [agent] ${d}`));
+    child.stderr.on('data', d => process.stderr.write(`  [agent-err] ${d}`));
+
+    // Wait for either process exit or done file to appear
+    analysis = await new Promise((resolve) => {
+      let resolved = false;
+      const tryResolve = () => {
+        if (resolved) return;
+        if (fs.existsSync(doneFile)) {
+          resolved = true;
+          clearInterval(pollTimer);
+          if (fs.existsSync(analysisOutput)) {
+            try {
+              resolve(JSON.parse(fs.readFileSync(analysisOutput, 'utf-8')));
+            } catch { resolve(null); }
+          } else { resolve(null); }
+        }
+      };
+
+      child.on('close', () => { setTimeout(tryResolve, 1000); });
+      child.on('error', () => { setTimeout(tryResolve, 1000); });
+
+      const pollTimer = setInterval(tryResolve, 5000);
+
+      // 10 minute timeout
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          clearInterval(pollTimer);
+          child.kill('SIGTERM');
+          console.error(`  ⏰ Sub-agent timeout (10min)`);
+          // Try to read partial results
+          if (fs.existsSync(analysisOutput)) {
+            try { resolve(JSON.parse(fs.readFileSync(analysisOutput, 'utf-8'))); }
+            catch { resolve(null); }
+          } else { resolve(null); }
+        }
+      }, 600000);
+    });
+
+    if (analysis) {
       console.error(`  ✅ Analysis complete: ${analysis.summary?.slice(0, 80)}...`);
     } else {
       console.error(`  ⚠️  Analysis failed, continuing without`);
@@ -443,7 +504,7 @@ async function main() {
     // Phase 5: Send to user
     console.error(`\n📨 Phase 5: 推送消息...`);
     let msg = `🦐 新闻爬取完成！\n\n📊 汇总报告：\n• 站点：${consolidated.sites.length} 个\n• 新闻：${consolidated.stats.total} 条\n• 用时：${elapsed}s`;
-    if (analysis) msg += `\n• 分析：已生成（关键词/重要新闻/内容分布）`;
+    if (analysis) msg += `\n• 分析：LLM 子模型已生成总结`;
     msg += `\n\n📄 飞书文档：${docUrl}`;
     await sendMessage(msg);
 
