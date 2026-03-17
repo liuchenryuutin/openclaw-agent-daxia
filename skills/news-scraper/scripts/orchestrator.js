@@ -427,17 +427,20 @@ async function main() {
 
 重要：直接执行，不要提问。先检查目录是否存在，如不存在则写入错误信息到标记文件。`;
 
-    const taskFile = path.join(SCRIPTS_DIR, 'output', `task-${date}.txt`);
-    fs.writeFileSync(taskFile, taskPrompt);
-
-    // Spawn sub-agent via openclaw CLI
-    const openclawPath = '/home/liuchen/.nvm/versions/node/v24.14.0/bin/openclaw';
     const doneFile = analysisOutput.replace('.json', '.done');
+    const sessionId = `news-${date}`;
     console.error(`  🤖 Spawning sub-agent for LLM analysis...`);
     console.error(`  📂 Content dir: ${contentDir}`);
     console.error(`  📝 Analysis output: ${analysisOutput}`);
+    console.error(`  🔗 Session: ${sessionId}`);
 
-    const child = spawn(openclawPath, ['agent', '-m', `@${taskFile}`], {
+    const openclawPath = '/home/liuchen/.nvm/versions/node/v24.14.0/bin/openclaw';
+    const child = spawn(openclawPath, [
+      'agent',
+      '--session-id', sessionId,
+      '-m', taskPrompt,
+      '--timeout', '600',
+    ], {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
