@@ -35,6 +35,65 @@ const FEISHU_CONFIG = {
   userId: 'ou_8462b401def44e3db8a04e4a52a67fff',
 };
 
+// ── JSON Repair (for LLM-generated JSON) ─────────────────
+function repairJSON(raw) {
+  // Step 1: Strip non-JSON lines (e.g., [plugins] messages from openclaw agent)
+  const jsonLines = raw.split('\n').filter(l => {
+    const t = l.trim();
+    return t && !t.startsWith('[') && !t.startsWith('//') && !t.startsWith('#');
+  });
+  let text = jsonLines.join('\n').trim();
+  if (!text.startsWith('{')) {
+    const idx = text.indexOf('{');
+    if (idx > 0) text = text.slice(idx);
+  }
+
+  // Step 2: Try direct parse
+  try { return JSON.parse(text); } catch {}
+
+  // Step 3: Fix unescaped quotes inside string values
+  // Strategy: when inside a JSON string value, any " not followed by
+  // a structural JSON character (},],,:) is an unescaped inner quote → \"
+  let fixed = '';
+  let inStr = false;
+  let esc = false;
+  const STRUCTURAL = new Set(['}', ']', ':', ',', '\n', '\r', '\t', ' ']);
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (esc) { fixed += ch; esc = false; continue; }
+    if (ch === '\\' && inStr) { fixed += ch; esc = true; continue; }
+    if (ch === '"') {
+      if (!inStr) {
+        inStr = true;
+        fixed += ch;
+      } else {
+        // Look ahead to find the next non-whitespace character
+        let j = i + 1;
+        while (j < text.length && (text[j] === ' ' || text[j] === '\t' || text[j] === '\n' || text[j] === '\r')) j++;
+        const next = text[j] || '';
+        if (next === '' || STRUCTURAL.has(next)) {
+          // This is the closing quote of the JSON string
+          inStr = false;
+          fixed += ch;
+        } else {
+          // This quote is inside the string value → escape it
+          fixed += '\\"';
+        }
+      }
+    } else {
+      fixed += ch;
+    }
+  }
+
+  try { return JSON.parse(fixed); } catch {}
+  // Last resort: fix trailing commas
+  try { return JSON.parse(fixed.replace(/,\s*([}\]])/g, '$1')); } catch {}
+
+  console.error('  [repairJSON] Failed to repair JSON');
+  return null;
+}
+
 // ── CLI ───────────────────────────────────────────────────
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -423,6 +482,13 @@ async function main() {
   }]
 }
 
+重要 JSON 格式规则：
+- 字符串值中的双引号必须转义为 \\"（例如：回应\\"Token焦虑\\"的说法）
+- 字符串值中的换行符必须转义为 \\n
+- 数组最后一个元素后不能有逗号
+- 对象最后一个属性后不能有逗号
+- 严格遵循 JSON 规范，使用 jsonlint 验证
+
 5. 完成后创建标记文件 ${analysisOutput.replace('.json', '.done')}
 
 重要：直接执行，不要提问。先检查目录是否存在，如不存在则写入错误信息到标记文件。`;
@@ -457,7 +523,7 @@ async function main() {
           clearInterval(pollTimer);
           if (fs.existsSync(analysisOutput)) {
             try {
-              resolve(JSON.parse(fs.readFileSync(analysisOutput, 'utf-8')));
+              resolve(repairJSON(fs.readFileSync(analysisOutput, 'utf-8')));
             } catch { resolve(null); }
           } else { resolve(null); }
         }
@@ -477,7 +543,7 @@ async function main() {
           console.error(`  ⏰ Sub-agent timeout (10min)`);
           // Try to read partial results
           if (fs.existsSync(analysisOutput)) {
-            try { resolve(JSON.parse(fs.readFileSync(analysisOutput, 'utf-8'))); }
+            try { resolve(repairJSON(fs.readFileSync(analysisOutput, 'utf-8'))); }
             catch { resolve(null); }
           } else { resolve(null); }
         }
